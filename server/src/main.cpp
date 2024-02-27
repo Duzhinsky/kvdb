@@ -1,24 +1,31 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <cstdio>
-#include <cerrno>
-#include <cstdlib>
 #include <cstring>
 #include <csignal>
+#include <spdlog/spdlog.h>
+#include "spdlog/fmt/ostr.h" // must be included
 
-#include "server_msg.h"
 
-static void do_something(int connfd) {
-    char rbuf[64] = {};
-    ssize_t n = read(connfd, rbuf, sizeof(rbuf) - 1);
+static void respond(const int& conn_fd, const char *&&buf) {
+    spdlog::trace("Sending \"{}\" to connection {}", buf, conn_fd);
+    write(conn_fd, buf, strlen(buf));
+}
+
+static ssize_t read_to(const int& conn_fd, char *buffer, const int buffer_len) {
+    ssize_t n = read(conn_fd, buffer, buffer_len);
+    spdlog::trace("Received \"{}\" from connection {}", buffer, conn_fd);
+    return n;
+}
+
+static void do_something(const int& conn_fd) {
+    char read_buffer[64] = {};
+    ssize_t n = read_to(conn_fd, read_buffer, sizeof(read_buffer) - 1);
     if (n < 0) {
-        server::io::msg("read() error");
+        spdlog::error("Error during reading a connection");
         return;
     }
-    printf("client says: %s\n", rbuf);
-
-    char wbuf[] = "Hello from C";
-    write(connfd, wbuf, strlen(wbuf));
+    spdlog::info("Client says: {}", read_buffer);
+    respond(conn_fd, "Hello from C");
 }
 
 static int init_socket() {
@@ -35,29 +42,33 @@ static int init_socket() {
     };
     int rv = bind(fd, (const sockaddr *) &addr, sizeof(addr));
     if (rv) {
-        server::io::die("bind()");
+        spdlog::critical("Cannot bind a socket!");
+        abort();
     }
 
     rv = listen(fd, SOMAXCONN);
     if (rv) {
-        server::io::die("listen()");
+        spdlog::critical("Cannot listen a socket!");
+        abort();
     }
     return fd;
 }
 
 int main() {
+    spdlog::set_level(spdlog::level::trace);
     int fd = init_socket();
+    spdlog::info("Server has started and ready to accept connections");
     while (true) {
         // accept
         struct sockaddr_in client_addr = {};
         socklen_t addrlen = sizeof(client_addr);
-        int connfd = accept(fd, (struct sockaddr *)&client_addr, &addrlen);
-        if (connfd < 0) {
+        int conn_fd = accept(fd, (struct sockaddr *) &client_addr, &addrlen);
+        if (conn_fd < 0) {
             continue;
         }
 
-        do_something(connfd);
-        close(connfd);
+        do_something(conn_fd);
+        close(conn_fd);
     }
     return 0;
 }
