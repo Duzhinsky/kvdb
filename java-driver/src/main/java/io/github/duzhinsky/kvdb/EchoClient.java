@@ -10,7 +10,7 @@ public class EchoClient {
 
     public static void main(String[] args) {
         try (Connection gc = new Connection("localhost", 1234)) {
-            System.out.println(gc.sendMessage("Hello from Java"));
+            System.out.println(gc.sendMessage("get"));
         }
     }
 }

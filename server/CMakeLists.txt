@@ -26,7 +26,12 @@ set(SOURCE_FILES src/main.cpp
         src/server.h
         src/server.cpp
         src/connection.cpp
-        src/connection.h)
-add_executable(redis ${SOURCE_FILES})
+        src/connection.h
+        src/cmd/CommandProcessor.h
+        src/cmd/CommandManager.hpp
+        src/cmd/PutCommand.hpp
+        src/cmd/GetCommand.hpp
+        src/cmd/GetCommand.hpp)
+add_executable(kvdb ${SOURCE_FILES})
 
-target_link_libraries(redis ${USED_BOOST_LIBS} spdlog::spdlog)
+target_link_libraries(kvdb ${USED_BOOST_LIBS} spdlog::spdlog)
