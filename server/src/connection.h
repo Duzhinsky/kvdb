@@ -37,7 +37,6 @@ public:
 
 private:
     boost::asio::ip::tcp::socket socket_;
-    boost::asio::streambuf buf;
     std::shared_ptr<CommandManager> command_manager;
 };
 

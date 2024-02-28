@@ -1,7 +1,6 @@
 #include "connection.h"
 
 #include <spdlog/spdlog.h>
-#include <boost/regex.hpp>
 #include <utility>
 
 connection::connection(boost::asio::io_service &io_service,
@@ -12,14 +11,35 @@ connection::connection(boost::asio::io_service &io_service,
 
 void connection::run() {
     try {
-        boost::asio::read(socket_, buf, boost::asio::transfer_exactly(3));
-        std::string buf_str(boost::asio::buffers_begin(buf.data()),
-                            boost::asio::buffers_begin(buf.data()) + buf.size());
-        spdlog::trace("Received \"{}\" from a connection {}", buf_str, socket_.remote_endpoint().address().to_string());
-        command_manager->process(buf_str, ""); // tmp for tests
+        // Read length of command
+        uint8_t cmd_len;
+        boost::system::error_code ec;
+        boost::asio::read(socket_, boost::asio::buffer(&cmd_len, 1), ec);
+
+        // Read command
+        boost::asio::streambuf cmd_buf;
+        boost::asio::read(socket_, cmd_buf, boost::asio::transfer_exactly(cmd_len), ec);
+        std::string cmd(
+                boost::asio::buffers_begin(cmd_buf.data()),
+                boost::asio::buffers_begin(cmd_buf.data()) + cmd_buf.size()
+        );
+
+        // Read length of arguments
+        uint8_t arg_len;
+        boost::asio::read(socket_, boost::asio::buffer(&arg_len, 1), ec);
+
+        // Read arguments
+        boost::asio::streambuf args_buf;
+        boost::asio::read(socket_, args_buf, boost::asio::transfer_exactly(arg_len), ec);
+        std::string args(
+                boost::asio::buffers_begin(args_buf.data()),
+                boost::asio::buffers_begin(args_buf.data()) + args_buf.size()
+        );
+
+        command_manager->process(cmd, args); // tmp for tests
         boost::asio::write(
                 socket_,
-                boost::asio::buffer("Hello from C++"),
+                boost::asio::buffer("OK"),
                 boost::asio::transfer_all()
         );
         socket_.close();

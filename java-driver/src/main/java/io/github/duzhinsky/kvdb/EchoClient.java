@@ -10,7 +10,7 @@ public class EchoClient {
 
     public static void main(String[] args) {
         try (Connection gc = new Connection("localhost", 1234)) {
-            System.out.println(gc.sendMessage("get"));
+            System.out.println(gc.sendCommand("get", "123"));
         }
     }
 }
@@ -31,9 +31,12 @@ class Connection implements AutoCloseable {
         }
     }
 
-    public String sendMessage(String msg) {
+    public String sendCommand(String cmd, String arg) {
         try {
-            out.println(msg);
+            out.write((byte)(cmd.length()));
+            out.print(cmd);
+            out.write((byte)(arg.length()));
+            out.println(arg);
             return in.readLine();
         } catch (IOException e) {
             throw new RuntimeException(e);
