@@ -4,16 +4,19 @@
 #include "server.h"
 #include "cmd/GetCommand.hpp"
 #include "cmd/PutCommand.hpp"
+#include "storage/storage.h"
 
 int main() {
     spdlog::set_level(spdlog::level::trace);
     try {
         boost::asio::io_service io_service;
 
+        std::shared_ptr<storage> data_storage = std::make_shared<storage>();
+
         std::shared_ptr<CommandManager> commandManager = std::make_shared<CommandManager>();
         std::unique_ptr<CommandProcessor> cmds[] = {
-                std::make_unique<GetCommand>(),
-                std::make_unique<PutCommand>()
+                std::make_unique<GetCommand>(data_storage),
+                std::make_unique<PutCommand>(data_storage)
         };
         for (std::unique_ptr<CommandProcessor> &cmd: cmds)
             commandManager->reg_command(std::move(cmd));
